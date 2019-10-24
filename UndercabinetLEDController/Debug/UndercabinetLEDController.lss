@@ -1,0 +1,343 @@
+
+UndercabinetLEDController.elf:     file format elf32-avr
+
+Sections:
+Idx Name          Size      VMA       LMA       File off  Algn
+  0 .text         000001aa  00000000  00000000  00000074  2**1
+                  CONTENTS, ALLOC, LOAD, READONLY, CODE
+  1 .data         00000000  00800060  00800060  0000021e  2**0
+                  CONTENTS, ALLOC, LOAD, DATA
+  2 .bss          00000005  00800060  00800060  0000021e  2**0
+                  ALLOC
+  3 .comment      00000030  00000000  00000000  0000021e  2**0
+                  CONTENTS, READONLY
+  4 .note.gnu.avr.deviceinfo 0000003c  00000000  00000000  00000250  2**2
+                  CONTENTS, READONLY
+  5 .debug_aranges 00000048  00000000  00000000  0000028c  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  6 .debug_info   0000047a  00000000  00000000  000002d4  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  7 .debug_abbrev 000003a4  00000000  00000000  0000074e  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  8 .debug_line   000002d8  00000000  00000000  00000af2  2**0
+                  CONTENTS, READONLY, DEBUGGING
+  9 .debug_frame  000000a4  00000000  00000000  00000dcc  2**2
+                  CONTENTS, READONLY, DEBUGGING
+ 10 .debug_str    00000314  00000000  00000000  00000e70  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 11 .debug_loc    000000b2  00000000  00000000  00001184  2**0
+                  CONTENTS, READONLY, DEBUGGING
+ 12 .debug_ranges 00000038  00000000  00000000  00001236  2**0
+                  CONTENTS, READONLY, DEBUGGING
+
+Disassembly of section .text:
+
+00000000 <__vectors>:
+   0:	09 c0       	rjmp	.+18     	; 0x14 <__ctors_end>
+   2:	16 c0       	rjmp	.+44     	; 0x30 <__bad_interrupt>
+   4:	9a c0       	rjmp	.+308    	; 0x13a <__vector_2>
+   6:	64 c0       	rjmp	.+200    	; 0xd0 <__vector_3>
+   8:	13 c0       	rjmp	.+38     	; 0x30 <__bad_interrupt>
+   a:	12 c0       	rjmp	.+36     	; 0x30 <__bad_interrupt>
+   c:	11 c0       	rjmp	.+34     	; 0x30 <__bad_interrupt>
+   e:	10 c0       	rjmp	.+32     	; 0x30 <__bad_interrupt>
+  10:	0f c0       	rjmp	.+30     	; 0x30 <__bad_interrupt>
+  12:	0e c0       	rjmp	.+28     	; 0x30 <__bad_interrupt>
+
+00000014 <__ctors_end>:
+  14:	11 24       	eor	r1, r1
+  16:	1f be       	out	0x3f, r1	; 63
+  18:	cf e9       	ldi	r28, 0x9F	; 159
+  1a:	cd bf       	out	0x3d, r28	; 61
+
+0000001c <__do_clear_bss>:
+  1c:	20 e0       	ldi	r18, 0x00	; 0
+  1e:	a0 e6       	ldi	r26, 0x60	; 96
+  20:	b0 e0       	ldi	r27, 0x00	; 0
+  22:	01 c0       	rjmp	.+2      	; 0x26 <.do_clear_bss_start>
+
+00000024 <.do_clear_bss_loop>:
+  24:	1d 92       	st	X+, r1
+
+00000026 <.do_clear_bss_start>:
+  26:	a5 36       	cpi	r26, 0x65	; 101
+  28:	b2 07       	cpc	r27, r18
+  2a:	e1 f7       	brne	.-8      	; 0x24 <.do_clear_bss_loop>
+  2c:	34 d0       	rcall	.+104    	; 0x96 <main>
+  2e:	bb c0       	rjmp	.+374    	; 0x1a6 <_exit>
+
+00000030 <__bad_interrupt>:
+  30:	e7 cf       	rjmp	.-50     	; 0x0 <__vectors>
+
+00000032 <_Z10startTimerv>:
+
+volatile uint16_t counterOverflow;								//Used for keeping track of on-time since we only have one timer
+volatile uint8_t onCount;										//used for counting the 10 second intervals
+
+int startTimer(){
+	counterOverflow=0;											//Zero out the counters used to keep on time
+  32:	10 92 62 00 	sts	0x0062, r1	; 0x800062 <counterOverflow+0x1>
+  36:	10 92 61 00 	sts	0x0061, r1	; 0x800061 <counterOverflow>
+	onCount=0;
+  3a:	10 92 60 00 	sts	0x0060, r1	; 0x800060 <_edata>
+	TIMSK0 |= (1<<TOIE0);										//Enable the timer overflow ISR
+  3e:	89 b7       	in	r24, 0x39	; 57
+  40:	82 60       	ori	r24, 0x02	; 2
+  42:	89 bf       	out	0x39, r24	; 57
+	
+	return 1;
+}
+  44:	81 e0       	ldi	r24, 0x01	; 1
+  46:	90 e0       	ldi	r25, 0x00	; 0
+  48:	08 95       	ret
+
+0000004a <_Z9stopTimerv>:
+
+int stopTimer(){
+	TIMSK0 &= ~(1<<TOIE0);										//Disable the timer overflow ISR
+  4a:	89 b7       	in	r24, 0x39	; 57
+  4c:	8d 7f       	andi	r24, 0xFD	; 253
+  4e:	89 bf       	out	0x39, r24	; 57
+	counterOverflow=0;											//Zero out the counters used to keep on time
+  50:	10 92 62 00 	sts	0x0062, r1	; 0x800062 <counterOverflow+0x1>
+  54:	10 92 61 00 	sts	0x0061, r1	; 0x800061 <counterOverflow>
+	onCount=0;
+  58:	10 92 60 00 	sts	0x0060, r1	; 0x800060 <_edata>
+	return 1;
+}
+  5c:	81 e0       	ldi	r24, 0x01	; 1
+  5e:	90 e0       	ldi	r25, 0x00	; 0
+  60:	08 95       	ret
+
+00000062 <_Z8checkPIRv>:
+
+int checkPIR(){
+	if(PORTB & (1<<PIR)){
+  62:	c2 9b       	sbis	0x18, 2	; 24
+  64:	04 c0       	rjmp	.+8      	; 0x6e <_Z8checkPIRv+0xc>
+		LEDBR = brightness;										//Make sure the LED is on
+  66:	80 91 64 00 	lds	r24, 0x0064	; 0x800064 <brightness>
+  6a:	89 bd       	out	0x29, r24	; 41
+		startTimer();
+  6c:	e2 df       	rcall	.-60     	; 0x32 <_Z10startTimerv>
+	}
+	if(onCount >= onTime){
+  6e:	90 91 60 00 	lds	r25, 0x0060	; 0x800060 <_edata>
+  72:	80 91 63 00 	lds	r24, 0x0063	; 0x800063 <onTime>
+  76:	98 17       	cp	r25, r24
+  78:	10 f0       	brcs	.+4      	; 0x7e <_Z8checkPIRv+0x1c>
+		stopTimer();
+  7a:	e7 df       	rcall	.-50     	; 0x4a <_Z9stopTimerv>
+		LEDBR = 0;												//Turn off the LED
+  7c:	19 bc       	out	0x29, r1	; 41
+	}
+	if(counterOverflow != 0){
+  7e:	80 91 61 00 	lds	r24, 0x0061	; 0x800061 <counterOverflow>
+  82:	90 91 62 00 	lds	r25, 0x0062	; 0x800062 <counterOverflow+0x1>
+  86:	89 2b       	or	r24, r25
+  88:	19 f0       	breq	.+6      	; 0x90 <_Z8checkPIRv+0x2e>
+		LEDBR = brightness;
+  8a:	80 91 64 00 	lds	r24, 0x0064	; 0x800064 <brightness>
+  8e:	89 bd       	out	0x29, r24	; 41
+	}
+	return 1;
+}
+  90:	81 e0       	ldi	r24, 0x01	; 1
+  92:	90 e0       	ldi	r25, 0x00	; 0
+  94:	08 95       	ret
+
+00000096 <main>:
+
+int main(void)
+{
+	//Setup inputs and outputs, as well as timers, PWM and interrupts
+	DDRB = (DDRB | (1<<LED)) & ~((1<<PIR)|(1<<TIMESW)|(BRSW));	//Set outputs and inputs
+  96:	87 b3       	in	r24, 0x17	; 23
+  98:	83 7f       	andi	r24, 0xF3	; 243
+  9a:	82 60       	ori	r24, 0x02	; 2
+  9c:	87 bb       	out	0x17, r24	; 23
+	PORTB = (PORTB|(1<<TIMESW)|(1<<BRSW)) & ~(1<PIR);				//Set pullups for the buttons and explicitly not for the PIR
+  9e:	88 b3       	in	r24, 0x18	; 24
+  a0:	8e 7f       	andi	r24, 0xFE	; 254
+  a2:	88 61       	ori	r24, 0x18	; 24
+  a4:	88 bb       	out	0x18, r24	; 24
+	
+	TCCR0A |= (1<<COM0B1)|(1<<WGM00)|(1<<WGM01);					//Set the timer for fast PWM
+  a6:	8f b5       	in	r24, 0x2f	; 47
+  a8:	83 62       	ori	r24, 0x23	; 35
+  aa:	8f bd       	out	0x2f, r24	; 47
+	TCCR0B |= (1<<CS00);											//Set the clock with no prescaler
+  ac:	83 b7       	in	r24, 0x33	; 51
+  ae:	81 60       	ori	r24, 0x01	; 1
+  b0:	83 bf       	out	0x33, r24	; 51
+    
+	//Setup Pin change interrupt
+	GIMSK |= (1<<PCIE);												//Enable in mask register
+  b2:	8b b7       	in	r24, 0x3b	; 59
+  b4:	80 62       	ori	r24, 0x20	; 32
+  b6:	8b bf       	out	0x3b, r24	; 59
+	PCMSK |= ~((1<<TIMESW)|(1<<BRSW)|(1<<PIR));						//Mask all pins other than the two buttons and PIR
+  b8:	85 b3       	in	r24, 0x15	; 21
+  ba:	83 6e       	ori	r24, 0xE3	; 227
+  bc:	85 bb       	out	0x15, r24	; 21
+	
+	brightness = MAXPWM;											//Initialize the LED brightness as maximum brightness
+  be:	8f ef       	ldi	r24, 0xFF	; 255
+  c0:	80 93 64 00 	sts	0x0064, r24	; 0x800064 <brightness>
+	onTime = 3;														//Default LED on-time is 30 seconds
+  c4:	83 e0       	ldi	r24, 0x03	; 3
+  c6:	80 93 63 00 	sts	0x0063, r24	; 0x800063 <onTime>
+	
+	//Start interrupts
+	sei();
+  ca:	78 94       	sei
+	
+    while (1)
+    {
+		checkPIR();
+  cc:	ca df       	rcall	.-108    	; 0x62 <_Z8checkPIRv>
+  ce:	fe cf       	rjmp	.-4      	; 0xcc <__stack+0x2d>
+
+000000d0 <__vector_3>:
+    }
+}
+
+ISR(TIM0_OVF_vect){
+  d0:	1f 92       	push	r1
+  d2:	0f 92       	push	r0
+  d4:	0f b6       	in	r0, 0x3f	; 63
+  d6:	0f 92       	push	r0
+  d8:	11 24       	eor	r1, r1
+  da:	2f 93       	push	r18
+  dc:	8f 93       	push	r24
+  de:	9f 93       	push	r25
+	
+	if(counterOverflow>=P_OVFL){
+  e0:	80 91 61 00 	lds	r24, 0x0061	; 0x800061 <counterOverflow>
+  e4:	90 91 62 00 	lds	r25, 0x0062	; 0x800062 <counterOverflow+0x1>
+  e8:	8a 3c       	cpi	r24, 0xCA	; 202
+  ea:	97 4b       	sbci	r25, 0xB7	; 183
+  ec:	a8 f0       	brcs	.+42     	; 0x118 <__vector_3+0x48>
+		counterOverflow = 0;
+  ee:	10 92 62 00 	sts	0x0062, r1	; 0x800062 <counterOverflow+0x1>
+  f2:	10 92 61 00 	sts	0x0061, r1	; 0x800061 <counterOverflow>
+		
+		if(onCount>=onTime){
+  f6:	90 91 60 00 	lds	r25, 0x0060	; 0x800060 <_edata>
+  fa:	80 91 63 00 	lds	r24, 0x0063	; 0x800063 <onTime>
+  fe:	98 17       	cp	r25, r24
+ 100:	28 f0       	brcs	.+10     	; 0x10c <__vector_3+0x3c>
+			onCount=onTime;											//Hold at the max time so you can deal with it in the main function
+ 102:	80 91 63 00 	lds	r24, 0x0063	; 0x800063 <onTime>
+ 106:	80 93 60 00 	sts	0x0060, r24	; 0x800060 <_edata>
+ 10a:	0f c0       	rjmp	.+30     	; 0x12a <__vector_3+0x5a>
+		}
+		else{
+			onCount++;
+ 10c:	80 91 60 00 	lds	r24, 0x0060	; 0x800060 <_edata>
+ 110:	8f 5f       	subi	r24, 0xFF	; 255
+ 112:	80 93 60 00 	sts	0x0060, r24	; 0x800060 <_edata>
+ 116:	09 c0       	rjmp	.+18     	; 0x12a <__vector_3+0x5a>
+		}
+	}
+	
+	else{
+		counterOverflow++;
+ 118:	80 91 61 00 	lds	r24, 0x0061	; 0x800061 <counterOverflow>
+ 11c:	90 91 62 00 	lds	r25, 0x0062	; 0x800062 <counterOverflow+0x1>
+ 120:	01 96       	adiw	r24, 0x01	; 1
+ 122:	90 93 62 00 	sts	0x0062, r25	; 0x800062 <counterOverflow+0x1>
+ 126:	80 93 61 00 	sts	0x0061, r24	; 0x800061 <counterOverflow>
+	}
+}
+ 12a:	9f 91       	pop	r25
+ 12c:	8f 91       	pop	r24
+ 12e:	2f 91       	pop	r18
+ 130:	0f 90       	pop	r0
+ 132:	0f be       	out	0x3f, r0	; 63
+ 134:	0f 90       	pop	r0
+ 136:	1f 90       	pop	r1
+ 138:	18 95       	reti
+
+0000013a <__vector_2>:
+
+ISR(PCINT0_vect, ISR_NOBLOCK){
+ 13a:	78 94       	sei
+ 13c:	1f 92       	push	r1
+ 13e:	0f 92       	push	r0
+ 140:	0f b6       	in	r0, 0x3f	; 63
+ 142:	0f 92       	push	r0
+ 144:	11 24       	eor	r1, r1
+ 146:	8f 93       	push	r24
+ 148:	9f 93       	push	r25
+	
+	uint8_t state= PORTB;						//Read the state of the port immediately
+ 14a:	88 b3       	in	r24, 0x18	; 24
+	
+	//Split into the two possible interrupt sources and handle each
+	if(state & (1<<TIMESW)){
+ 14c:	83 ff       	sbrs	r24, 3
+ 14e:	0f c0       	rjmp	.+30     	; 0x16e <__vector_2+0x34>
+		//The time switch has been pressed
+		if(onTime == MAXTIME){
+ 150:	90 91 63 00 	lds	r25, 0x0063	; 0x800063 <onTime>
+			onTime = MINTIME/10;
+		}
+		else if(onTime >= ((MAXTIME-30)/10)){
+ 154:	90 91 63 00 	lds	r25, 0x0063	; 0x800063 <onTime>
+ 158:	99 33       	cpi	r25, 0x39	; 57
+ 15a:	20 f0       	brcs	.+8      	; 0x164 <__vector_2+0x2a>
+			onTime = MAXTIME/10;
+ 15c:	9c e3       	ldi	r25, 0x3C	; 60
+ 15e:	90 93 63 00 	sts	0x0063, r25	; 0x800063 <onTime>
+ 162:	05 c0       	rjmp	.+10     	; 0x16e <__vector_2+0x34>
+		}
+		else{
+			onTime += 30;
+ 164:	90 91 63 00 	lds	r25, 0x0063	; 0x800063 <onTime>
+ 168:	92 5e       	subi	r25, 0xE2	; 226
+ 16a:	90 93 63 00 	sts	0x0063, r25	; 0x800063 <onTime>
+		}
+	}
+	
+	if(state & (1<<BRSW)){
+ 16e:	84 ff       	sbrs	r24, 4
+ 170:	13 c0       	rjmp	.+38     	; 0x198 <__vector_2+0x5e>
+		//The brightness has been adjusted
+		if(brightness == MINPWM){
+ 172:	80 91 64 00 	lds	r24, 0x0064	; 0x800064 <brightness>
+ 176:	81 11       	cpse	r24, r1
+ 178:	03 c0       	rjmp	.+6      	; 0x180 <__vector_2+0x46>
+			brightness = 0;
+ 17a:	10 92 64 00 	sts	0x0064, r1	; 0x800064 <brightness>
+ 17e:	0c c0       	rjmp	.+24     	; 0x198 <__vector_2+0x5e>
+		}
+		else if(brightness<(25+MINPWM)){
+ 180:	80 91 64 00 	lds	r24, 0x0064	; 0x800064 <brightness>
+ 184:	89 31       	cpi	r24, 0x19	; 25
+ 186:	18 f4       	brcc	.+6      	; 0x18e <__vector_2+0x54>
+			brightness = 0;
+ 188:	10 92 64 00 	sts	0x0064, r1	; 0x800064 <brightness>
+ 18c:	05 c0       	rjmp	.+10     	; 0x198 <__vector_2+0x5e>
+		}
+		else{
+			brightness-=25;
+ 18e:	80 91 64 00 	lds	r24, 0x0064	; 0x800064 <brightness>
+ 192:	89 51       	subi	r24, 0x19	; 25
+ 194:	80 93 64 00 	sts	0x0064, r24	; 0x800064 <brightness>
+		}
+	}
+}
+ 198:	9f 91       	pop	r25
+ 19a:	8f 91       	pop	r24
+ 19c:	0f 90       	pop	r0
+ 19e:	0f be       	out	0x3f, r0	; 63
+ 1a0:	0f 90       	pop	r0
+ 1a2:	1f 90       	pop	r1
+ 1a4:	18 95       	reti
+
+000001a6 <_exit>:
+ 1a6:	f8 94       	cli
+
+000001a8 <__stop_program>:
+ 1a8:	ff cf       	rjmp	.-2      	; 0x1a8 <__stop_program>
